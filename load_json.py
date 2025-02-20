@@ -5,9 +5,13 @@ from app import app, db, User  # Import from your Flask application
 with open('users.json', 'r') as file:
     users = json.load(file)
 
+    print("Loaded JSON Data:", users)
+
 # Use Flask's application context to access the database
 with app.app_context():
     for user_data in users:
+        print("No data found in JSON file!")
+
         # Check if the user already exists to prevent duplicates
         existing_user = User.query.filter_by(email=user_data["email"]).first()
         if not existing_user:
