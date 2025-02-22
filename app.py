@@ -16,28 +16,28 @@ with app.app_context():
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
-    # 🟢 Query Parameters
+    #Query Parameters
     page = request.args.get("page", 1, type=int)  # Default page 1
     limit = request.args.get("limit", 5, type=int)  # Default limit 5
     search = request.args.get("search", "", type=str)  # Search query
     sort = request.args.get("sort", "id", type=str)  # Sorting field
 
-    # 🟢 Sorting Logic
+    #Sorting Logic
     sort_field = getattr(User, sort.lstrip('-'), User.id)  # Default sorting by ID
     if sort.startswith("-"):
         sort_field = sort_field.desc()
 
-    # 🟢 Filtering Logic (Case-Insensitive Search)
+    #Filtering Logic (Case-Insensitive Search)
     query = User.query
     if search:
         query = query.filter(
             (User.first_name.ilike(f"%{search}%")) | (User.last_name.ilike(f"%{search}%"))
         )
 
-    # 🟢 Pagination
+    # Pagination
     users = query.order_by(sort_field).paginate(page=page, per_page=limit, error_out=False)
 
-    # 🟢 Convert Users to JSON
+    #Converting Users to JSON
     return jsonify({
         "page": page,
         "limit": limit,
@@ -46,17 +46,15 @@ def get_users():
         "users": [user.to_dict() for user in users.items]
     })
 
-
-# ✅ POST /api/users - Create a New User
 @app.route('/api/users', methods=['POST'])
 def create_user():
-    user_data = request.json  # Get JSON payload from request
+    user_data = request.json  # getting JSON payload from request
 
-    # Ensure 'id' is not in the request body
+    # Ensuring 'id' is not in the request body
     if "id" not in user_data:
         return jsonify({"error":"ID is required"}),400
         
-     # ✅ Create a new User instance
+     #Creating a new User instance
     new_user = User(
                 id=user_data["id"],
                 first_name=user_data["first_name"],
@@ -84,21 +82,23 @@ def create_user():
 
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
-    user = User.query.get(user_id)  # Fetch user by ID
+    user = User.query.get(user_id)  # Fetching user by ID
     if user is None:
         return jsonify({"error": f"User with ID {user_id} not found"}), 404
 
-    return jsonify(user.to_dict()), 200  # Return user details
+    return jsonify(user.to_dict()), 200  # Returning user details
+
+
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
-    user = User.query.get(user_id)  # Fetch user by ID
+    user = User.query.get(user_id)  # Fetching user by ID
     
     if user is None:
         return jsonify({"error": f"User with ID {user_id} not found"}), 404
 
-    data = request.get_json()  # Get JSON data from request
+    data = request.get_json()  # Getting JSON data from request
 
-    # Update user attributes if provided in the request
+    # Updating user attributes if provided in the request
     if 'first_name' in data:
         user.first_name = data['first_name']
     if 'last_name' in data:
@@ -124,6 +124,8 @@ def update_user(user_id):
     except Exception as e:
         db.session.rollback()  # Rollback changes if an error occurs
         return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+    
+
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get(user_id)
@@ -138,6 +140,7 @@ def delete_user(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+    
 
 @app.route('/api/users/<int:user_id>', methods=['PATCH'])
 def patch_user(user_id):
@@ -156,6 +159,7 @@ def patch_user(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+    
 
 @app.route('/api/users/summary', methods=['GET'])
 def get_users_summary():
