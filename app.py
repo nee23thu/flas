@@ -1,27 +1,172 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, jsonify
+from models import User
+from sql_alchemy import db
+from flask import request
+from sqlalchemy.exc import IntegrityError
+
 
 app = Flask(__name__)
-
-# Configure PostgreSQL Database 
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:Neethu@localhost:5432/user_db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
-# Define the User model to match the JSON data
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)  # ID field (primary key)
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    company_name = db.Column(db.String(200))
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(2))
-    zip = db.Column(db.Integer)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    web = db.Column(db.String(255))
-    age = db.Column(db.Integer)
-
-# Create tables if they don't exist
 with app.app_context():
     db.create_all()
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    # 🟢 Query Parameters
+    page = request.args.get("page", 1, type=int)  # Default page 1
+    limit = request.args.get("limit", 5, type=int)  # Default limit 5
+    search = request.args.get("search", "", type=str)  # Search query
+    sort = request.args.get("sort", "id", type=str)  # Sorting field
+
+    # 🟢 Sorting Logic
+    sort_field = getattr(User, sort.lstrip('-'), User.id)  # Default sorting by ID
+    if sort.startswith("-"):
+        sort_field = sort_field.desc()
+
+    # 🟢 Filtering Logic (Case-Insensitive Search)
+    query = User.query
+    if search:
+        query = query.filter(
+            (User.first_name.ilike(f"%{search}%")) | (User.last_name.ilike(f"%{search}%"))
+        )
+
+    # 🟢 Pagination
+    users = query.order_by(sort_field).paginate(page=page, per_page=limit, error_out=False)
+
+    # 🟢 Convert Users to JSON
+    return jsonify({
+        "page": page,
+        "limit": limit,
+        "total_users": users.total,
+        "total_pages": users.pages,
+        "users": [user.to_dict() for user in users.items]
+    })
+
+
+# ✅ POST /api/users - Create a New User
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    user_data = request.json  # Get JSON payload from request
+
+    # Ensure 'id' is not in the request body
+    if "id" not in user_data:
+        return jsonify({"error":"ID is required"}),400
+        
+     # ✅ Create a new User instance
+    new_user = User(
+                id=user_data["id"],
+                first_name=user_data["first_name"],
+                last_name=user_data["last_name"],
+                company_name=user_data["company_name"],
+                city=user_data["city"],
+                state=user_data["state"],
+                zip=user_data["zip"],
+                email=user_data["email"],
+                web=user_data["web"],
+                age=user_data["age"]
+            )
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify(new_user.to_dict()), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Duplicate email or unique constraint violation"}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/users/<int:user_id>', methods=['GET'])
+def get_user(user_id):
+    user = User.query.get(user_id)  # Fetch user by ID
+    if user is None:
+        return jsonify({"error": f"User with ID {user_id} not found"}), 404
+
+    return jsonify(user.to_dict()), 200  # Return user details
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+def update_user(user_id):
+    user = User.query.get(user_id)  # Fetch user by ID
+    
+    if user is None:
+        return jsonify({"error": f"User with ID {user_id} not found"}), 404
+
+    data = request.get_json()  # Get JSON data from request
+
+    # Update user attributes if provided in the request
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+    if 'email' in data:
+        user.email = data['email']
+    if 'company_name' in data:
+        user.company_name = data['company_name']
+    if 'city' in data:
+        user.city = data['city']
+    if 'state' in data:
+        user.state = data['state']
+    if 'zip' in data:
+        user.zip = data['zip']
+    if 'web' in data:
+        user.web = data['web']
+    if 'age' in data:
+        user.age = data['age']
+
+    try:
+        db.session.commit()  # Save changes
+        return jsonify({"message": f"User with ID {user_id} updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()  # Rollback changes if an error occurs
+        return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    
+    if user is None:
+        return jsonify({"error": f"User with ID {user_id} not found"}), 404
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": f"User with ID {user_id} deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['PATCH'])
+def patch_user(user_id):
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({"error": f"User with ID {user_id} not found"}), 404
+    
+    data = request.get_json()
+    for key, value in data.items():
+        if hasattr(user, key):
+            setattr(user, key, value)
+    
+    try:
+        db.session.commit()
+        return jsonify({"message": f"User with ID {user_id} updated successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+
+@app.route('/api/users/summary', methods=['GET'])
+def get_users_summary():
+    total_users = User.query.count()
+    avg_age = db.session.query(db.func.avg(User.age)).scalar()
+    city_count = db.session.query(User.city, db.func.count(User.id)).group_by(User.city).all()
+    
+    summary = {
+        "total_users": total_users,
+        "average_age": avg_age,
+        "count_by_city": {city: count for city, count in city_count}
+    }
+    
+    return jsonify(summary), 200

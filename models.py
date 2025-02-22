@@ -1,4 +1,4 @@
-from database import db
+from sql_alchemy import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
