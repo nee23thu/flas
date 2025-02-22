@@ -2,7 +2,7 @@ import json
 from app import app, db, User  # Import from your Flask application
 
 # Read JSON data from the file
-with open('users.json', 'r') as file:
+with open("users.json", "r") as file:
     users = json.load(file)
 
     print("Loaded JSON Data:", users)
@@ -26,7 +26,7 @@ with app.app_context():
                 zip=user_data["zip"],
                 email=user_data["email"],
                 web=user_data["web"],
-                age=user_data["age"]
+                age=user_data["age"],
             )
             db.session.add(new_user)
 
@@ -38,4 +38,3 @@ print("Loading JSON file...")
 print("Connecting to PostgreSQL database...")
 print("Inserting data into the database...")
 print("Data successfully inserted!")
-
