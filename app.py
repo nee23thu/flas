@@ -72,9 +72,6 @@ def create_user():
         db.session.add(new_user)
         db.session.commit()
         return jsonify(new_user.to_dict()), 201
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({"error": "Duplicate email or unique constraint violation"}), 400
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
