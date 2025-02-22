@@ -1,0 +1,303 @@
+openapi: 3.0.0
+info:
+  title: User Management API in Flask
+  version: 1.0.0
+  description: >
+    This API provides endpoints for managing user data, including listing, creating,
+    retrieving, updating, and deleting user records, as well as a summary endpoint
+    for statistics.
+
+servers:
+  - url: http://127.0.0.1:5000
+    description: Local Development Server
+
+paths:
+
+  /api/users:
+    get:
+      summary: List users
+      operationId: listUsers
+      description: >
+        Returns a paginated list of users. Supports search by name and sorting.
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 5
+        - name: search
+          in: query
+          description: Case-insensitive substring search on first or last name
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: >
+            Field name for ascending sort or prefix with '-' for descending sort
+            (e.g., `-age`).
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A paginated list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid query parameters
+    post:
+      summary: Create a new user
+      operationId: createUser
+      description: Creates a new user record from a JSON payload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+
+  /api/users/{id}:
+    get:
+      summary: Get user details
+      operationId: getUser
+      description: Retrieve a single user by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+    put:
+      summary: Update user details
+      operationId: updateUser
+      description: Replace all user fields with the provided data.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+        '404':
+          description: User not found
+    delete:
+      summary: Delete a user
+      operationId: deleteUser
+      description: Deletes a user by its ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted successfully (no content)
+        '404':
+          description: User not found
+    patch:
+      summary: Partially update a user
+      operationId: patchUser
+      description: >
+        Allows updating only certain fields of a user record, rather than replacing
+        the entire object.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: User ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatch'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request data
+        '404':
+          description: User not found
+
+  /api/users/summary:
+    get:
+      summary: Get user statistics
+      operationId: getUserSummary
+      description: Returns aggregated stats, e.g., count by city, average age, etc.
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSummary'
+        '400':
+          description: Bad request
+
+components:
+  schemas:
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+        firstName:
+          type: string
+        lastName:
+          type: string
+        companyName:
+          type: string
+        age:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        email:
+          type: string
+          format: email
+        web:
+          type: string
+          format: uri
+      required:
+        - id
+        - firstName
+        - lastName
+
+    UserCreate:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        companyName:
+          type: string
+        age:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        email:
+          type: string
+          format: email
+        web:
+          type: string
+          format: uri
+      required:
+        - firstName
+        - lastName
+        - email
+
+    UserUpdate:
+      allOf:
+        - $ref: '#/components/schemas/UserCreate'
+      description: >
+        For a full update, all updatable fields must be provided.
+
+    UserPatch:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        companyName:
+          type: string
+        age:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        email:
+          type: string
+          format: email
+        web:
+          type: string
+          format: uri
+
+    UserSummary:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          description: Total number of users
+        averageAge:
+          type: number
+          format: float
+          description: Average age of all users
+        countByCity:
+          type: object
+          additionalProperties:
+            type: integer
+          description: A map of cityName -> userCount
+      required:
+        - totalUsers
