@@ -22,7 +22,7 @@ Make sure you have the following installed:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/nee23thu/flas.git
+git clone https://github.com/nee23thu/flask-user-api.git
 cd flask-user-api
 ```
 
@@ -32,6 +32,12 @@ cd flask-user-api
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+#### Using `poetry`:
+```bash
+poetry install
+poetry shell
 ```
 
 ### 3. Configure Database
@@ -55,5 +61,31 @@ flask db upgrade
 flask run
 ```
 
-**Contributions & Issues:** Feel free to open an issue or submit a PR!
+## API Documentation
+Once running, access API documentation at:
+```
+http://127.0.0.1:5000/docs
+```
+
+## Testing
+Run tests using:
+```bash
+pytest
+```
+
+## Code Quality Tools
+Run the following commands for linting and formatting:
+```bash
+ruff .  # Linting
+black .  # Formatting
+```
+
+To use `pre-commit` hooks:
+```bash
+pre-commit install
+pre-commit run --all-files
+```
+
+## Logging
+The application logs meaningful messages for debugging in `app.log`.
 
