@@ -34,11 +34,6 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-#### Using `poetry`:
-```bash
-poetry install
-poetry shell
-```
 
 ### 3. Configure Database
 Ensure PostgreSQL is running and create a database:
@@ -58,7 +53,7 @@ flask db upgrade
 
 ### 5. Start the Server
 ```bash
-flask run
+python3 app.py
 ```
 
 ## API Documentation
@@ -88,4 +83,3 @@ pre-commit run --all-files
 
 ## Logging
 The application logs meaningful messages for debugging in `app.log`.
-
