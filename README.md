@@ -62,12 +62,6 @@ Once running, access API documentation at:
 http://127.0.0.1:5000/docs
 ```
 
-## Testing
-Run tests using:
-```bash
-pytest
-```
-
 ## Code Quality Tools
 Run the following commands for linting and formatting:
 ```bash
